@@ -46,8 +46,6 @@ const main = async () => {
     });
   };
 
-  const sortByWallet = (a, b) => a.funder - b.funder;
-
   const searchTerm = (start) => {
     if (start != " ") {
       return {
