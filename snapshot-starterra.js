@@ -10,38 +10,59 @@ const main = async () => {
     chainID: "columbus-5",
   });
   const HOLDERS = [];
+  let start_after = " ";
+  let isFullyCompleted = false;
 
   const init = async () => {
-    let isFullyCompleted = false;
-    let start_after = "terra1a0uw7tlk03lc8ns5adnhgxvnllwdxgalv2fj6h";
-
     do {
       const response = await LCD.wasm.contractQuery(
         MINTER_ADDRESS,
-        {
-          funders: {
-            start_after: start_after,
-            limit: 1024,
-          },
-        },
-        { height: 7544510 }
+        searchTerm(start_after),
+        { height: 7603700 }
       );
-      createHoldersList(response);
-      isFullyCompleted = true;
+      if (!isFullyCompleted) {
+        createHoldersList(response);
+      }
     } while (!isFullyCompleted);
     buildFile();
   };
 
   const createHoldersList = (response) => {
+    if (response.users.length == 0) {
+      isFullyCompleted = true;
+      HOLDERS.sort(sortByWallet);
+      return;
+    }
     response.users.forEach((element) => {
       if (element.available_funds > 0) {
         HOLDERS.push({
-          funder: element.funder,
-          available_funds: element.available_funds,
-          spent_funds: element.spent_funds,
+          [element.funder]: {
+            denom: "uusd",
+            balance: element.available_funds,
+          },
         });
       }
+      start_after = element.funder;
     });
+  };
+
+  const sortByWallet = (a, b) => a.funder - b.funder;
+
+  const searchTerm = (start) => {
+    if (start != " ") {
+      return {
+        funders: {
+          start_after: start,
+          limit: 1024,
+        },
+      };
+    } else {
+      return {
+        funders: {
+          limit: 1024,
+        },
+      };
+    }
   };
 
   const buildFile = () => {
